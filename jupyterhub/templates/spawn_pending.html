@@ -1,0 +1,9 @@
+{% extends "templates/spawn_pending.html" %}
+
+{% block message %}
+
+<p><i class="fa fa-spinner" aria-hidden="true"></i> Your server is starting up.</p>
+<p><i class="fa fa-smile-o" aria-hidden="true"></i> You will be redirected automatically when it's ready for you.</p>
+<p><i class="fa fa-exclamation-triangle" aria-hidden="true"></i> If it fails, you should check the idle resource, using <span style="font-family: Consolas, Menlo, Monaco, monospace; font-weight: bold;">pestat</span> or <span style="font-family: Consolas, Menlo, Monaco, monospace; font-weight: bold;">qstat -a</span></p>
+
+{% endblock %}

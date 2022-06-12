@@ -1,0 +1,94 @@
+{% extends "page.html" %}
+{% if announcement_spawn %}
+  {% set announcement = announcement_spawn %}
+{% endif %}
+
+{% block main %}
+
+<div class="container">
+  {% block heading %}
+  <div class="row text-center">
+    <h1>Server Options</h1>
+  </div>
+  {% endblock %}
+  <div class="row col-sm-offset-2 col-sm-8">
+    {% if for_user and user.name != for_user.name -%}
+      <p>Spawning server for {{ for_user.name }}</p>
+    {% endif -%}
+    {% if error_message -%}
+      <p class="spawn-error-msg text-danger">
+        Error: {{error_message}}
+      </p>
+    {% endif %}
+    <form enctype="multipart/form-data" id="spawn_form" action="{{url}}" method="post" role="form">
+      {{spawner_options_form | safe}}
+      <br>
+      <div id="small_input" style="display: none;">
+        <label><i class="fa fa-clock-o" aria-hidden="true"></i> Hours (1h ~ 12h)</label>
+        <br>
+        <input required="required" name="hours_small" type="number" value="6" min="1" max="12" step="1"></input> (h)
+        <br>
+        <br>
+        <label><i class="fa fa-bolt" aria-hidden="true"></i> CPU cores (8 ~ 72)</label>
+        <br>
+        <input required="required" name="cpu_small" type="number" value="8" min="8" max="72" step="1"></input> (cores)
+        <br>
+        <br>
+        <label><i class="fa fa-hdd-o" aria-hidden="true"></i> Memory (10G ~ 400G)</label>
+        <br>
+        <input required="required" name="memory_small" type="number" value="10" min="10" max="400" step="10"></input> (GB)
+      </div>
+
+      <div id="fat_input" style="display: none;">
+        <label><i class="fa fa-clock-o" aria-hidden="true"></i> Hours (1h ~ 8h)</label>
+        <br>
+        <input required="required" name="hours_fat" type="number" value="1" min="1" max="8" step="1"></input> (h)
+        <br>
+        <br>
+        <label><i class="fa fa-bolt" aria-hidden="true"></i> CPU cores (8 ~ 192)</label>
+        <br>
+        <input required="required" name="cpu_fat" type="number" value="8" min="8" max="192" step="1"></input> (cores)
+        <br>
+        <br>
+        <label><i class="fa fa-hdd-o" aria-hidden="true"></i> Memory (400G ~ 6000G)</label>
+        <br>
+        <input required="required" name="memory_fat" type="number" value="400" min="400" max="6000" step="100"></input> (GB)
+      </div>
+      <br>
+      <div class="feedback-container">
+        <input type="submit" value="Start" class="btn btn-jupyter form-control">
+        <div class="feedback-widget hidden">
+          <i class="fa fa-spinner"></i>
+        </div>
+      </div>
+    </form>
+  </div>
+</div>
+
+{% endblock %}
+
+{% block script %}
+{{ super() }}
+<script>
+// Spawner options
+document.getElementById('queue').addEventListener('change', function () {
+    if (this.value == 'small' || this.value == 'gpu') {
+        document.getElementById('small_input').style.display = 'block';
+        document.getElementById('fat_input').style.display = 'none';
+    } else if (this.value == 'fat') {
+        document.getElementById('small_input').style.display = 'none';
+        document.getElementById('fat_input').style.display = 'block';
+    } else {
+        document.getElementById('small_input').style.display = 'none';
+        document.getElementById('fat_input').style.display = 'none';
+    }
+});
+// setup onSubmit feedback
+$('form').submit((e) => {
+  var form = $(e.target);
+  form.find('.feedback-container>input').attr('disabled', true);
+  form.find('.feedback-container>*').toggleClass('hidden');
+  form.find('.feedback-widget>*').toggleClass('fa-pulse');
+});
+</script>
+{% endblock %}
