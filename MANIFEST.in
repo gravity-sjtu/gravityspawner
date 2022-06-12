@@ -1,0 +1,4 @@
+include *.md
+include LICENSE
+graft jupyterhub
+graft imgs
