@@ -2,7 +2,7 @@ from jupyterhub.spawner import LocalProcessSpawner, Spawner
 from traitlets import (
     Type, Tuple, List, Dict, Unicode
 )
-from gravityspawner import WrapSpawner
+from wrapspawner import WrapSpawner
 
 class GravitySpawner(WrapSpawner):
     """GravitySpawner: changed from ProfilesSpawner, thanks wrapspawner.ProfilesSpawner!
@@ -19,17 +19,19 @@ class GravitySpawner(WrapSpawner):
         config = True,
         help = """List of profiles to offer for selection. Signature is:
             List(Tuple( Unicode, Unicode, Type(Spawner), Dict )) corresponding to
-            profile display name, unique key, Spawner class, dictionary of spawner config options.
-
-            The first three values will be exposed in the input_template as {display}, {key}, and {type}"""
+            1. display name (show in the selection menu)
+            2. unique key (used to identify the profile)
+            3. Spawner class (specify which spawner to use)
+            4. Spawner config options (limit of the options, such as min, max of memory, hour, CPU cores)
+            """
         )
 
     child_profile = Unicode()
 
     form_template = Unicode(
-        """<label for="profilee"><i class="fa fa-caret-square-o-down" aria-hidden="true"></i> If you need more time or resource, feel free to <a href="/contact/" target="_blank" rel="noopener noreferrer">contact ADMIN <i class="fa fa-user-secret" aria-hidden="true"></i></a></label>
+        """<label for="profile"><i class="fa fa-caret-square-o-down" aria-hidden="true"></i> If you need more time or resource, feel free to <a href="/contact/" target="_blank" rel="noopener noreferrer">contact ADMIN <i class="fa fa-user-secret" aria-hidden="true"></i></a></label>
         <br>
-        <label for="profilee"><i class="fa fa-caret-square-o-down" aria-hidden="true"></i> Select a job queue you like <i class="fa fa-hand-o-down" aria-hidden="true"></i></label>
+        <label for="profile"><i class="fa fa-caret-square-o-down" aria-hidden="true"></i> Select a job queue you like <i class="fa fa-hand-o-down" aria-hidden="true"></i></label>
         
         <select id="queue" class="form-control" name="profile" required autofocus>
         {input_template}
@@ -85,42 +87,38 @@ class GravitySpawner(WrapSpawner):
     # load/get/clear : save/restore child_profile (and on load, use it to update child class/config)
 
     def select_profile(self, profile):
-        '''Considering security and limitation, let's check these args!
-             hours_small: 1 <= Int <= 72
-             cpu_small: 8<= Int <= 72
-             memory_small: 10 <= Int <= 360
-             hours_fat: 1 <= Int <= 12
-             cpu_fat: 8<= Int <= 192
-             memory_fat: 400 <= Int <= 6000
+        '''Considering security and limitation, let's check these args according to their limits!
         '''
         # Select matching profile, or do nothing (leaving previous or default config in place)
         for p in self.profiles:
+            # local is LocalProcessSpawner
             if p[1] == 'local' == profile:
                 self.child_class = p[2]
                 self.child_config = p[3]
                 return
+            # small/fat/gpu is batchspawner
             elif p[1] == profile:
                 if profile == 'fat':
                     _prefix = '_fat'
-                    min_hours, max_hours = 1, 24
-                    min_cpu, max_cpu = 8, 192
-                    min_mem, max_mem = 400, 6000
                 elif profile == 'small' or profile == 'gpu':
                     _prefix = '_small'
-                    min_hours, max_hours = 1, 72
-                    min_cpu, max_cpu = 8, 72
-                    min_mem, max_mem = 10, 400
                 else:
                     return
+
+                # get limit from jupyterhub_config.py
+                min_hours, max_hours = p[3]['min_max_hour']
+                min_cpu, max_cpu = p[3]['min_max_cpu']
+                min_mem, max_mem = p[3]['min_max_memory']
+
                 _hours = int(self.extra_args['hours'+_prefix])
                 _cpu = int(self.extra_args['cpu'+_prefix])
                 _mem = int(self.extra_args['memory'+_prefix])
                 # check if the args value is in the expected range? if not, we set them as minimal
                 if not (min_hours <= _hours <= max_hours) or not (min_cpu <= _cpu <= max_cpu) or not (min_mem <= _mem <= max_mem):
                     _hours, _cpu, _mem = min_hours, min_cpu, min_mem
+                
                 # set the final config, here is PBS script setting!
                 self.child_class = p[2]  # what kind of spawner we will run?
-                # self.child_config = p[3]  # detail default config, such as req_nprocs, req_runtime etc.
                 self.child_config['req_queue'] = str(profile)
                 self.child_config['req_runtime'] = str(_hours)
                 self.child_config['req_nprocs'] = str(_cpu)

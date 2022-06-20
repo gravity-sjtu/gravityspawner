@@ -1,6 +1,11 @@
 # gravityspawner for Jupyterhub
 
 This package is for [**Gravity of DOA, SJTU**](https://gravity.sjtu.edu.cn/)
+
+We attend to select PBS/Slurm job queue first, then input arguments like *hours, memory, CPU cores* to spawn a Jupyter server.
+
+So actually we need to combine *templates* and *wrapspawner* to achieve this goal:
+
 - `jupyterhub/templates` is *jinja* template, where we add some extra options!
   - `jupyterhub/templates/spawn.html`: add **extra options**, such as `hour, cpu, memory`, so that you can set them totally free. Meanwhile, use JS to make the **input form appear/disappear**
   - `jupyterhub/templates/page.html`: change the navigation bar, including buttons and icons
@@ -32,16 +37,16 @@ This package is for [**Gravity of DOA, SJTU**](https://gravity.sjtu.edu.cn/)
 
    ```python
    c.GravitySpawner.profiles = [
-      ('[ LOGIN 01 ] 8 cores 8 GB running forever (unless   idle for more than 3 days)', 'local', 'jupyterhub.   spawner.LocalProcessSpawner', {'ip':'0.0.0.0'} ),
-      ('[ SMALL ] Max: [ 72 cores + 400 GB ]', 'small',  'batchspawner.TorqueSpawner',
-         dict(req_nprocs='24', req_queue='small',  req_runtime='9:00:00', req_memory='120gb')),
-      ('[ GPU ] Max: [ 72 cores + 400 GB + NVIDIA Tesla V100   32GB ]', 'gpu', 'batchspawner.TorqueSpawner',
-         dict(req_nprocs='72', req_queue='gpu',    req_runtime='6:00:00', req_memory='360gb')),
-      ('[ FAT ] Max: [ 192 cores + 6000 GB ]', 'fat',    'batchspawner.TorqueSpawner',
-         dict(req_nprocs='60', req_queue='fat',    req_runtime='3:00:00', req_memory='1800gb')),
+      ('[ LOGIN 01 ] 8 cores 8 GB running forever (unless idle for more than 3 days)', 'local', 'jupyterhub.   spawner.LocalProcessSpawner', {'ip':'0.0.0.0'} ),
+      ('[ SMALL ] Max: [ 72 cores + 400 GB ]', 'small', 'batchspawner.TorqueSpawner',
+         dict(min_max_hour=(1,12),min_max_cpu=(8,72),min_max_memory=(10,360))),
+      ('[ GPU ] Max: [ 72 cores + 400 GB + NVIDIA Tesla V100 32GB ]', 'gpu', 'batchspawner.TorqueSpawner',
+         dict(min_max_hour=(1,12),min_max_cpu=(8,72),min_max_memory=(10,360))),
+      ('[ FAT ] Max: [ 192 cores + 6000 GB ]', 'fat', 'batchspawner.TorqueSpawner',
+         dict(min_max_hour=(1,12),min_max_cpu=(8,192),min_max_memory=(400,6000))),
    ]
    ```
-   Actually, `dict(xxx='xxx',...,'xxx'='xxx')` is **useless** here, cause we've already let these arguments set by **user input** in front-end, so the `dict` here won't make any effect at all, but we just keep it here for ~~format beauty (✿◡‿◡)~~
+   **profiles** here represent *display, key, Spawner, options*. We can set limits of resource here, such as *hour, memory, CPU cores*. If you need more options or change options, you also need to edit the `jupyterhub/templates` (front-end)
 
 The final *piece of* configuration of `jupyterhub_config.py` like this:
 ```python
@@ -67,31 +72,32 @@ c.TorqueSpawner.batch_script = '''#!/bin/bash
 #PBS -o /home/$USER/.jupyter/jupyterhub.log
 conda deactivate 1>/dev/null 2>&1
 conda deactivate 1>/dev/null 2>&1
-module load anaconda/conda-4.12.0 && source activate
-conda activate /opt/jupyterhub/envs/hub01
+module load anaconda/conda-4.12.0 cuda/cuda-11.3
+source /opt/conda/conda-4.12.0/bin/activate
+conda activate /opt/jupyterhub/envs/hub02
 {cmd}
 '''
 
 # Defaul options of Spawner. local + small + gpu + fat
 c.GravitySpawner.profiles = [
-   ('[ LOGIN 01 ] 8 cores 8 GB running forever (unless idle for more than 3 days)', 'local', 'jupyterhub.spawner.LocalProcessSpawner', {'ip':'0.0.0.0'} ),
+   ('[ LOGIN 02 ] 8 cores 8 GB running forever (unless idle for more than 3 days)', 'local', 'jupyterhub.spawner.LocalProcessSpawner', {'ip':'0.0.0.0'} ),
    ('[ SMALL ] Max: [ 72 cores + 400 GB ]', 'small', 'batchspawner.TorqueSpawner',
-      dict(req_nprocs='24', req_queue='small', req_runtime='9:00:00', req_memory='120gb')),
+      dict(min_max_hour=(1,12),min_max_cpu=(8,72),min_max_memory=(10,360))),
    ('[ GPU ] Max: [ 72 cores + 400 GB + NVIDIA Tesla V100 32GB ]', 'gpu', 'batchspawner.TorqueSpawner',
-      dict(req_nprocs='72', req_queue='gpu', req_runtime='6:00:00', req_memory='360gb')),
+      dict(min_max_hour=(1,12),min_max_cpu=(8,72),min_max_memory=(10,360))),
    ('[ FAT ] Max: [ 192 cores + 6000 GB ]', 'fat', 'batchspawner.TorqueSpawner',
-      dict(req_nprocs='60', req_queue='fat', req_runtime='3:00:00', req_memory='1800gb')),
+      dict(min_max_hour=(1,12),min_max_cpu=(8,192),min_max_memory=(400,6000))),
 ]
 ```
 
 ### Example
 
 This is a typical dropdown menu letting the user choose between local **Login node** and **Torque/PBS queues**
-![selection menu](imgs/select.png)
+![selection menu](https://github.com/lalalabox/gravityspawner/raw/master/imgs/select.png)
 
 After using `jupyterhub/templates`, we can input args according to our selection, e.g.🌰
 1. select **login node**, which is `'local'` in code:
-![select login node](imgs/input_local.png)
+![select login node](https://github.com/lalalabox/gravityspawner/raw/master/imgs/input_local.png)
 2. select **Torque/PBS gpu queue**, which is `'gpu'` in code:
-![select PBS gpu queue](imgs/input_gpu.png)
+![select PBS gpu queue](https://github.com/lalalabox/gravityspawner/raw/master/imgs/input_gpu.png)
 

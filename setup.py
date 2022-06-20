@@ -11,10 +11,10 @@ with open("README.md", "r", encoding="utf-8") as fh:
 
 setuptools.setup(
     name                ="gravityspawner",
-    version             ="0.0.1",
+    version             ="0.0.2",
     author              = "LALALA",
     author_email        = "toorxkh@gmail.com",
-    description         = """GravitySpawner: A spawner for Jupyterhub to let user select and input options of Spawner Server""",
+    description         = """GravitySpawner: A spawner for Jupyterhub to let user select and input options at the same time""",
     long_description    =long_description,
     long_description_content_type="text/markdown",
     url                 ="https://github.com/lalalabox/gravityspawner",
