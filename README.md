@@ -4,20 +4,21 @@ This package is for [**Gravity of DOA, SJTU**](https://gravity.sjtu.edu.cn/)
 
 We attend to select PBS/Slurm job queue first, then input arguments like *hours, memory, CPU cores* to spawn a Jupyter server.
 
-So actually we need to combine *templates* and *wrapspawner* to achieve this goal:
-
-- `jupyterhub/templates` is *jinja* template, where we add some extra options!
-  - `jupyterhub/templates/spawn.html`: add **extra options**, such as `hour, cpu, memory`, so that you can set them totally free. Meanwhile, use JS to make the **input form appear/disappear**
-  - `jupyterhub/templates/page.html`: change the navigation bar, including buttons and icons
-  - `jupyterhub/templates/spawn_pending.html`: add some message
-- `gravityspawner.py` is changed from [*wrapspawner.ProfilesSpawner*](https://github.com/jupyterhub/wrapspawner/blob/master/wrapspawner/wrapspawner.py#L165)
-  - get extra options from the front-end, such as `hour, cpu, memory`
-  - add some message when select **Server Option**
-  - set the default limit of **Torque/PBS job**, which are `hour, cpu, memory` for different queue
+We need to combine *templates* and *wrapspawner* to achieve this goal:
+```shell
+├── jupyterhub
+│   └── templates               # jinja template
+│       ├── page.html           # change the navigation bar, add some button
+│       ├── spawn.html          # user can select and input arguments such as hour, cpu, memory. use JavaScript to hide the input form.
+│       └── spawn_pending.html  # waiting for spawning server, add some message
+└── src
+    ├── gravityspawner
+        ├── gravityspawner.py   # get extra arguments from jinja template, then pass them to batchspawner [thanks wrapspawner.ProfilesSpawner]. set resource limits as well.
+```
 
 ## Installation
 
-1. Install via **pip**:
+Install via **pip**:
 
    ```shell
    pip install gravityspawner
@@ -27,13 +28,14 @@ So actually we need to combine *templates* and *wrapspawner* to achieve this goa
    python -m pip install gravityspawner
    ```
 
-2. Add lines in `jupyterhub_config.py`:
+## Usage
+1. Add lines in `jupyterhub_config.py`:
    
    ```python
       c.JupyterHub.spawner_class = 'gravityspawner.GravitySpawner'
    ```
 
-3. If we use `batchspawner.TorqueSpawner`, then add these lines to `jupyterhub_config.py`:
+2. If we use `batchspawner.TorqueSpawner`, then add these lines in `jupyterhub_config.py`:
 
    ```python
    c.GravitySpawner.profiles = [
@@ -46,7 +48,7 @@ So actually we need to combine *templates* and *wrapspawner* to achieve this goa
          dict(min_max_hour=(1,12),min_max_cpu=(8,192),min_max_memory=(400,6000))),
    ]
    ```
-   **profiles** here represent *display, key, Spawner, options*. We can set limits of resource here, such as *hour, memory, CPU cores*. If you need more options or change options, you also need to edit the `jupyterhub/templates` (front-end)
+   **profiles** here represent *display, key, Spawner, options*. We can set limits of resource here, such as *hour, memory, CPU cores*. If you need more options or change options, you also need to edit the `jupyterhub/templates/spawn.html` (front-end)
 
 The final *piece of* configuration of `jupyterhub_config.py` like this:
 ```python
