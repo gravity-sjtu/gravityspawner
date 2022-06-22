@@ -92,7 +92,7 @@ c.GravitySpawner.profiles = [
 ]
 ```
 
-### Example
+## Example
 
 This is a typical dropdown menu letting the user choose between local **Login node** and **Torque/PBS queues**
 ![selection menu](https://github.com/lalalabox/gravityspawner/raw/master/imgs/select.png)

@@ -1,3 +1,3 @@
 [build-system]
-requires = ["wrapspawner>=1.0.0", "jupyterhub>=2.3.0"]
+requires = ["wrapspawner>=1.0.0", "jupyterhub>=2.3.0", "setuptools>=61.0"]
 build-backend = "setuptools.build_meta"
