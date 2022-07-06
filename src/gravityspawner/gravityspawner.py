@@ -89,6 +89,10 @@ class GravitySpawner(WrapSpawner):
     def select_profile(self, profile):
         '''Considering security and limitation, let's check these args according to their limits!
         '''
+        # get the options of the selected profile
+        self.extra_args = dict()
+        for key in ['hours_small', 'cpu_small', 'memory_small', 'hours_fat', 'cpu_fat', 'memory_fat']:
+            self.extra_args[key] = self.user_options.get(key, [""])[0]
         # Select matching profile, or do nothing (leaving previous or default config in place)
         for p in self.profiles:
             # local is LocalProcessSpawner
@@ -126,12 +130,6 @@ class GravitySpawner(WrapSpawner):
                 return
 
     def construct_child(self):
-        self.extra_args = dict()
-        for key in ['hours_small', 'cpu_small', 'memory_small', 'hours_fat', 'cpu_fat', 'memory_fat']:
-            self.extra_args[key] = self.user_options.get(key, [""])[0]
-        # print("lalala")
-        # print(self.extra_args)
-        # print(self.user_options)
         self.child_profile = self.user_options.get('profile', "")
         self.select_profile(self.child_profile)
         super().construct_child()
